@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VGR Konst Sök</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <meta name="theme-color" content="#0077cc" />
+
+  <!-- QR-bibliotek -->
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+
+  <style>
+    :root {
+      --brand: #0077cc;
+      --brand-dark: #005a9e;
+      --bg: #f4f6f8;
+      --text: #1a1a1a;
+      --card-bg: #ffffff;
+      --border: #e0e0e0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background-color: var(--brand);
+      color: white;
+      padding: 20px 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.75rem;
+    }
+
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    #searchForm {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    #searchForm input,
+    #searchForm select,
+    #searchForm button {
+      flex: 1 1 200px;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    #searchForm button {
+      background: var(--brand);
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #searchForm button:hover {
+      background: var(--brand-dark);
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VGR Konst Sök</h1>
+  </header>
+
+  <div class="wrap">
+    <form id="searchForm">
+      <input type="text" placeholder="Sök konstverk..." />
+      <select>
+        <option>Välj kategori</option>
+        <option>Måleri</option>
+        <option>Skulptur</option>
+        <option>Foto</option>
+      </select>
+      <input type="text" placeholder="Plats..." />
+      <button type="submit">Sök</button>
+    </form>
+  </div>
+
+  <footer>
+    © VGR Konst – Moderniserad version
+  </footer>
+</body>
+</html>
