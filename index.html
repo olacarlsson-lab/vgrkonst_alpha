@@ -595,6 +595,20 @@
       <summary style="cursor:pointer; user-select:none;">Visa urval</summary>
       <div id="selectionList" class="sel-list" aria-live="polite"></div>
     </details>
+
+    <!-- Sorting Options -->
+    <div style="margin-top:12px; display:flex; align-items:center; gap:8px;">
+      <label for="sortSelect" style="font-size:0.85rem; color:var(--text-muted);">Sortera:</label>
+      <select id="sortSelect"
+        style="padding:4px 8px; font-size:0.85rem; background:var(--field-bg); color:var(--text-main); border:1px solid var(--border-soft); border-radius:6px;">
+        <option value="relevance">Relevans</option>
+        <option value="artist-az">Konstnär (A-Ö)</option>
+        <option value="title-az">Titel (A-Ö)</option>
+        <option value="year-old">År (Äldst först)</option>
+        <option value="year-new">År (Nyast först)</option>
+      </select>
+    </div>
+
     <div id="cards" class="cards" role="list"></div>
     <div id="empty" class="empty" hidden>Inga resultat.</div>
   </div>
@@ -1030,6 +1044,54 @@
       runSearchFromForm();
     }
 
+    // ======= Sorting Function =======
+    function sortResults(items, sortOption, filters) {
+      // Make a copy to avoid mutating the original
+      const sorted = [...items];
+
+      switch (sortOption) {
+        case 'artist-az':
+          sorted.sort((a, b) => {
+            const aCreator = (a.creator || '').toLowerCase();
+            const bCreator = (b.creator || '').toLowerCase();
+            return aCreator.localeCompare(bCreator, 'sv');
+          });
+          break;
+
+        case 'title-az':
+          sorted.sort((a, b) => {
+            const aTitle = (a.title || '').toLowerCase();
+            const bTitle = (b.title || '').toLowerCase();
+            return aTitle.localeCompare(bTitle, 'sv');
+          });
+          break;
+
+        case 'year-old':
+          sorted.sort((a, b) => {
+            const aYear = parseInt(a.created) || 0;
+            const bYear = parseInt(b.created) || 0;
+            return aYear - bYear; // Oldest first
+          });
+          break;
+
+        case 'year-new':
+          sorted.sort((a, b) => {
+            const aYear = parseInt(a.created) || 0;
+            const bYear = parseInt(b.created) || 0;
+            return bYear - aYear; // Newest first
+          });
+          break;
+
+        case 'relevance':
+        default:
+          // Relevance sorting is already applied in performSearch
+          // This is the default, so we don't need to re-sort
+          break;
+      }
+
+      return sorted;
+    }
+
     // ======= Sökning (Lokal + Worker) =======
     async function performSearch(filters) {
       // Använd rätt container ID ('cards' istället för 'results')
@@ -1176,6 +1238,10 @@
 
       // Spara resultat för "Lägg till alla"
       currentResults = filtered;
+
+      // Apply sorting based on selected option
+      const sortOption = document.getElementById('sortSelect')?.value || 'relevance';
+      filtered = sortResults(filtered, sortOption, filters);
 
       renderCards(filtered.slice(0, 100));
 
@@ -1750,6 +1816,11 @@
 
     document.getElementById('clearBtn').addEventListener('click', () => {
       clearAllFilters();
+      runSearchFromForm();
+    });
+
+    // Sort dropdown change listener
+    document.getElementById('sortSelect')?.addEventListener('change', () => {
       runSearchFromForm();
     });
 
