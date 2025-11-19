@@ -1049,77 +1049,88 @@
 
       // 1. Fritextsökning (Fuzzy via Worker)
       if (filters.creator || filters.title) {
-        const cQuery = filters.creator ? filters.creator.toLowerCase() : null;
-        const tQuery = filters.title ? filters.title.toLowerCase() : null;
+        // Steg 1: Separera sökstrategier för Konstnär vs Titel
 
-        // Steg 1: Kolla efter EXAKT matchning (case-insensitive)
-        // Om vi hittar exakta träffar, visa BARA dem.
-        let exactMatches = [];
+        let creatorResults = null;
+        let titleResults = null;
 
-        // Optimering: Loopa bara om vi har söktermer
-        if (cQuery || tQuery) {
-          exactMatches = allData.filter(item => {
-            if (cQuery) {
-              if ((item.creator || '').toLowerCase() !== cQuery) return false;
-            }
-            if (tQuery) {
-              if ((item.title || '').toLowerCase() !== tQuery) return false;
-            }
-            return true;
-          });
+        // --- A. KONSTNÄR (Exakt matchning har företräde - "Exclusive") ---
+        if (filters.creator) {
+          const cQuery = filters.creator.toLowerCase();
+          const cExact = allData.filter(item => (item.creator || '').toLowerCase() === cQuery);
+
+          if (cExact.length > 0) {
+            // Om exakt match finns, visa BARA dessa (enligt önskemål)
+            creatorResults = cExact;
+          } else {
+            // Annars, kör fuzzy
+            const fuseRes = await searchInWorker({ creator: filters.creator });
+            creatorResults = fuseRes.map(r => r.item);
+          }
         }
 
-        if (exactMatches.length > 0) {
-          console.log(`Found ${exactMatches.length} exact matches.`);
-          filtered = exactMatches;
-        } else {
-          // Steg 2: Om ingen exakt match, kör Fuzzy Search
-          // Vi bygger ett objekt för att söka i specifika fält
-          const queryObj = {};
-          let hasQuery = false;
+        // --- B. TITEL (Exakt matchning först, men visa även fuzzy - "Inclusive") ---
+        if (filters.title) {
+          const tQuery = filters.title.toLowerCase();
+          const tExact = allData.filter(item => (item.title || '').toLowerCase() === tQuery);
 
-          if (filters.creator) {
-            queryObj.creator = filters.creator;
-            hasQuery = true;
-          }
-          if (filters.title) {
-            queryObj.title = filters.title;
-            hasQuery = true;
-          }
+          const fuseRes = await searchInWorker({ title: filters.title });
+          const tFuzzy = fuseRes.map(r => r.item);
 
-          if (hasQuery) {
-            // Fuse.search med objekt gör att den söker specifikt i de fälten
-            const fuseResults = await searchInWorker(queryObj);
-            filtered = fuseResults.map(r => r.item);
+          // Slå ihop: Exakta först, sedan fuzzy (utan dubbletter)
+          const tMap = new Map();
+          tExact.forEach(item => tMap.set(item.id, item));
+          tFuzzy.forEach(item => {
+            if (!tMap.has(item.id)) tMap.set(item.id, item);
+          });
 
-            // Sortera resultaten: Prioritera de som BÖRJAR med söktermen (förnamn eller efternamn)
-            // Vi kollar om fältet startar med query eller innehåller " " + query
-            filtered.sort((a, b) => {
-              let scoreA = 0;
-              let scoreB = 0;
+          titleResults = Array.from(tMap.values());
+        }
 
-              const checkPriority = (item, field, query) => {
-                if (!query || !item[field]) return 0;
-                const val = item[field].toLowerCase();
-                const q = query.toLowerCase();
-                if (val === q) return 10; // Exakt match (borde redan fångats men ändå)
-                if (val.startsWith(q)) return 5; // Börjar med
-                if (val.includes(' ' + q)) return 4; // Ord inuti börjar med (t.ex. efternamn)
-                return 0;
-              };
+        // --- C. KOMBINERA RESULTAT (Intersection) ---
+        if (creatorResults !== null && titleResults !== null) {
+          // Vi måste hitta snittet av creatorResults och titleResults
+          // Optimering: Iterera över den kortaste listan
+          const [smaller, larger] = creatorResults.length < titleResults.length
+            ? [creatorResults, titleResults]
+            : [titleResults, creatorResults];
 
-              if (queryObj.creator) {
-                scoreA += checkPriority(a, 'creator', queryObj.creator);
-                scoreB += checkPriority(b, 'creator', queryObj.creator);
-              }
-              if (queryObj.title) {
-                scoreA += checkPriority(a, 'title', queryObj.title);
-                scoreB += checkPriority(b, 'title', queryObj.title);
-              }
+          const largerIds = new Set(larger.map(item => item.id));
+          filtered = smaller.filter(item => largerIds.has(item.id));
+        } else if (creatorResults !== null) {
+          filtered = creatorResults;
+        } else if (titleResults !== null) {
+          filtered = titleResults;
+        }
 
-              return scoreB - scoreA; // Högst poäng först
-            });
-          }
+        // --- D. SORTERA (Prioritera "börjar med") ---
+        // Vi sorterar bara om vi faktiskt har gjort en sökning (inte om vi visar allt)
+        if (filters.creator || filters.title) {
+          filtered.sort((a, b) => {
+            let scoreA = 0;
+            let scoreB = 0;
+
+            const checkPriority = (item, field, query) => {
+              if (!query || !item[field]) return 0;
+              const val = item[field].toLowerCase();
+              const q = query.toLowerCase();
+              if (val === q) return 10;
+              if (val.startsWith(q)) return 5;
+              if (val.includes(' ' + q)) return 4;
+              return 0;
+            };
+
+            if (filters.creator) {
+              scoreA += checkPriority(a, 'creator', filters.creator);
+              scoreB += checkPriority(b, 'creator', filters.creator);
+            }
+            if (filters.title) {
+              scoreA += checkPriority(a, 'title', filters.title);
+              scoreB += checkPriority(b, 'title', filters.title);
+            }
+
+            return scoreB - scoreA;
+          });
         }
       }
 
