@@ -45,28 +45,28 @@
 
     /* LIGHT THEME */
     :root[data-theme="light"] {
-      --body-bg: radial-gradient(circle at top, #e0f2fe 0, #f7f9fc 40%, #eff3f8 100%);
-      --header-bg: linear-gradient(to bottom, rgba(255, 255, 255, 0.96), rgba(243, 244, 246, 0.9), transparent 80%);
-      --text-main: #111827;
-      --text-muted: #6b7280;
+      --body-bg: linear-gradient(to bottom, #f5f7fa 0%, #e8ecf1 100%);
+      --header-bg: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.85), transparent 80%);
+      --text-main: #1e293b;
+      --text-muted: #64748b;
 
-      --panel-bg: #ffffff;
+      --panel-bg: #f8fafc;
       --card-bg: #ffffff;
-      --chip-bg: #e5e7eb;
+      --chip-bg: #e2e8f0;
 
-      --border-soft: #d1d5db;
-      --border-strong: #cbd5f5;
+      --border-soft: #cbd5e1;
+      --border-strong: #94a3b8;
 
-      --field-bg: #f9fafb;
+      --field-bg: #f1f5f9;
 
-      --btn-primary-fg: #f9fafb;
-      --btn-secondary-bg: #f9fafb;
-      --btn-secondary-border: #d1d5db;
-      --btn-secondary-fg: #374151;
+      --btn-primary-fg: #f8fafc;
+      --btn-secondary-bg: #f1f5f9;
+      --btn-secondary-border: #cbd5e1;
+      --btn-secondary-fg: #475569;
 
-      --selection-add-bg: #ecfdf3;
+      --selection-add-bg: #f0fdf4;
       --selection-add-fg: #166534;
-      --selection-add-border: #bbf7d0;
+      --selection-add-border: #86efac;
     }
 
     * {
@@ -146,10 +146,8 @@
       background: var(--panel-bg);
       padding: 14px 14px 12px;
       border-radius: 16px;
-      border: 1px solid var(--border-strong);
-      box-shadow:
-        0 18px 45px rgba(15, 23, 42, .35),
-        0 0 0 1px rgba(148, 163, 184, .06);
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
     }
 
     #searchForm input[type="search"],
@@ -196,10 +194,10 @@
     button {
       border: none;
       border-radius: 999px;
-      padding: .8rem 1.1rem;
+      padding: 10px 24px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, .3);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, .08);
       font-size: .9rem;
     }
 
@@ -211,7 +209,7 @@
 
     #searchBtn:hover {
       filter: brightness(1.06);
-      box-shadow: 0 14px 32px rgba(56, 189, 248, .6);
+      box-shadow: 0 4px 12px rgba(56, 189, 248, .2);
     }
 
     #clearBtn {
@@ -245,10 +243,8 @@
       background: var(--card-bg);
       border-radius: 14px;
       padding: 14px 14px;
-      border: 1px solid var(--border-strong);
-      box-shadow:
-        0 14px 35px rgba(15, 23, 42, .25),
-        0 0 0 1px rgba(148, 163, 184, .04);
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, .04);
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -636,7 +632,7 @@
       <label for="emailSubject" style="display:block; margin-top:16px; font-weight:600; font-size:0.9rem;">Ämne för
         e-post:</label>
       <input type="text" id="emailSubject"
-        style="width:100%; padding:8px; margin-top:8px; border:1px solid var(--border-soft); border-radius:4px; background:var(--field-bg); color:var(--text-main);">
+        style="width:100%; padding:8px; margin-top:8px; border:1px solid var(--border-soft); border-radius:4px; background:var(--field-bg); color:var(--text-main); font-size:16px;">
 
       <div class="dialog-actions" style="margin-top:24px;">
         <button type="button" id="exportDialogClose"
@@ -1556,20 +1552,41 @@
         alert('Inga resultat att lägga till.');
         return;
       }
-      let addedCount = 0;
+
+      // Count how many items would be added
+      let wouldAdd = 0;
       for (const row of currentResults) {
         const vg = (row['id'] || '').toString().toUpperCase();
         if (!isVG(vg)) continue;
         if (hasSelection(vg)) continue;
-        if (selectionSize() >= SEL_LIMIT) break;
-        addToSelection({ ...row, id: vg }, '');
-        addedCount++;
+        if (selectionSize() + wouldAdd >= SEL_LIMIT) break;
+        wouldAdd++;
       }
-      if (addedCount === 0) {
-        alert('Inga nya VG-nummer lades till (antingen redan i urvalet eller urvalet är fullt).');
-      } else {
-        alert(`La till ${addedCount} VG-nummer från sökningen i urvalet.`);
+
+      if (wouldAdd === 0) {
+        alert('Inga nya VG-nummer att lägga till (antingen redan i urvalet eller urvalet är fullt).');
+        return;
       }
+
+      // Show confirmation dialog
+      showConfirm(
+        'Lägg till alla',
+        `Vill du lägga till ${wouldAdd} verk från sökningen i urvalet?`,
+        () => {
+          let addedCount = 0;
+          for (const row of currentResults) {
+            const vg = (row['id'] || '').toString().toUpperCase();
+            if (!isVG(vg)) continue;
+            if (hasSelection(vg)) continue;
+            if (selectionSize() >= SEL_LIMIT) break;
+            addToSelection({ ...row, id: vg }, '');
+            addedCount++;
+          }
+          if (addedCount > 0) {
+            alert(`La till ${addedCount} VG-nummer från sökningen i urvalet.`);
+          }
+        }
+      );
     }
 
     // ======= Kort-rendering + totaler =======
