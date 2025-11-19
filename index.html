@@ -520,21 +520,43 @@
         font-size: 1.3rem
       }
 
+      .wrap {
+        padding: 0 16px 32px;
+      }
+
       #searchForm {
-        grid-template-columns: 1fr
+        grid-template-columns: 1fr;
+        padding: 18px 16px 16px;
+        gap: 12px;
+      }
+
+      #searchForm input[type="search"],
+      #searchForm select {
+        padding: 0.85rem 1rem;
       }
 
       .actions {
-        flex-direction: column
+        flex-direction: column;
+        gap: 10px;
       }
 
       #searchBtn,
       #clearBtn {
-        width: 100%
+        width: 100%;
+        padding: 12px 24px;
       }
 
       .cards {
-        grid-template-columns: 1fr
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      header {
+        padding: 20px 16px 12px;
       }
     }
   </style>
